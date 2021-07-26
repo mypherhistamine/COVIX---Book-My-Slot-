@@ -1,4 +1,4 @@
-# book_my_slot
+# COVIX---Book-My-Slot
 
 ## Installing 
 
