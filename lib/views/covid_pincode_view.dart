@@ -3,7 +3,14 @@ import 'package:book_my_slot/models/session.dart';
 import 'package:book_my_slot/widgets/customCardWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:mailer/smtp_server/hotmail.dart';
+
+// import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:mailer/src/entities/message.dart' as mailer;
 import 'package:get/get.dart';
+import 'package:mailer/mailer.dart';
+import 'package:mailer/smtp_server/gmail.dart';
 
 class TesterView extends StatefulWidget {
   const TesterView({Key? key}) : super(key: key);
@@ -20,6 +27,8 @@ class _TesterViewState extends State<TesterView> {
   String jsonText = '';
   bool stopStreaming = false;
   TextEditingController pinCodeController = TextEditingController();
+  // FlutterLocalNotificationsPlugin? flutterLocalNotificationsPlugin;
+  int counter = 0;
 
   //show datePicker to pick date
   DateTime selectedDate = DateTime.now();
@@ -36,9 +45,75 @@ class _TesterViewState extends State<TesterView> {
     }
   }
 
+  void initializeWithSettings() {
+    // var androidInit = new AndroidInitializationSettings('cute_cat');
+    // var generalInitSettings = new InitializationSettings(android: androidInit);
+    // flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
+
+    //this function is a callback when the suer taps the notifcation
+    // flutterLocalNotificationsPlugin!.initialize(generalInitSettings,
+    // onSelectNotification: notificationSelected);
+  }
+
+  //when user tapps the notication then it's called
+  Future notificationSelected(String? payload) async {
+    //payload is like what you are displaying to the user
+  }
+
+  //show notification function
+  // Future _showNotification() async {
+  //   //use the android notication detail
+  //   AndroidNotificationDetails androidPlatformChannelSpecifics =
+  //       AndroidNotificationDetails(
+  //           "alarm_notif", 'alarm_notif', 'Channel for Alarm Notif',
+  //           playSound: true,
+  //           importance: Importance.max,
+  //           priority: Priority.high,
+  //           sound: RawResourceAndroidNotificationSound('long_cold_sting'),
+  //           largeIcon: DrawableResourceAndroidBitmap('cute_cat'));
+  //   var generalNotificationDetails =
+  //       NotificationDetails(android: androidPlatformChannelSpecifics);
+
+  //   //show the notification
+  //   await flutterLocalNotificationsPlugin!
+  //       .show(0, 'Alert !', "COWIN ALERT", generalNotificationDetails);
+  // }
+
+  Future sendMailToUser() async {
+    String username = 'sentient.optimus.prime@hotmail.com';
+    String password = 'Optimus@Prime99';
+
+    final smtpServer = hotmail(username, password);
+    // Use the SmtpServer class to configure an SMTP server:
+    // final smtpServer = SmtpServer('smtp.domain.com');
+    // See the named arguments of SmtpServer for further configuration
+    // options.
+
+    // Create our message.
+    final message = Message()
+      ..from = Address(username, 'COWIN Platform')
+      ..recipients.add('rishabhmishra23599@gmail.com')
+      // ..ccRecipients.addAll(['destCc1@example.com', 'destCc2@example.com'])
+      // ..bccRecipients.add(Address('bccAddress@example.com'))
+      ..subject = 'Slot Available - ${DateTime.now()}'
+      ..text =
+          'There is one slot avaialbility for you in your district go to the COWIN Platform now !!';
+    // ..html = "<h1>Test</h1>\n<p>Check the website now </p>";
+
+    try {
+      final sendReport = await send(message, smtpServer);
+      print('Message sent: ' + sendReport.toString());
+    } on MailerException catch (e) {
+      print('Message not sent.${e.toString()}');
+      for (var p in e.problems) {
+        print('Problem: ${p.code}: ${p.msg}');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    FocusNode fcusNode = FocusNode();
+    // FocusNode fcusNode = FocusNode();
     final Size size = MediaQuery.of(context).size;
     return Container(
       child: Scaffold(
@@ -83,6 +158,8 @@ class _TesterViewState extends State<TesterView> {
                                   ConnectionState.active) {
                             //set the last synced time
                             //check if there is any data at all
+                            // counter++;
+                            // _showNotification();
                             DateTime.now().toString();
                             if (snapshot.data!.centers!.length == 0) {
                               return Container(
@@ -361,13 +438,21 @@ class _TesterViewState extends State<TesterView> {
                   Container(
                     width: 100,
                     child: TextField(
-                      decoration: InputDecoration(hintText: 'Pincode'),
+                      decoration: InputDecoration(
+                        hintText: 'Pincode',
+                      ),
+                      maxLength: 6,
+                      keyboardType: TextInputType.number,
                       controller: pinCodeController,
                     ),
                   ),
                   RaisedButton(
                     onPressed: () => _selectDate(context),
                     child: Text('Select date'),
+                  ),
+                  RaisedButton(
+                    onPressed: sendMailToUser,
+                    child: Text('Notify'),
                   ),
                 ],
               ),
